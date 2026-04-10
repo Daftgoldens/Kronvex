@@ -1,0 +1,10 @@
+{
+  "name": "Kronvex Memory",
+  "description": "Persistent memory for AI agents — store, recall, and inject semantically-searchable context across sessions. EU-hosted, GDPR-compliant.",
+  "categories": ["memory", "storage", "productivity"],
+  "logo": "https://kronvex.io/logo.svg",
+  "install": {
+    "type": "npm",
+    "package": "@kronvex/mcp"
+  }
+}
