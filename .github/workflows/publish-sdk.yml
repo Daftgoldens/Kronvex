@@ -1,0 +1,53 @@
+name: Publish SDKs
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  publish-python:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: sdk/python
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install build tools
+        run: pip install build twine
+
+      - name: Build and publish to PyPI
+        run: |
+          python -m build
+          twine upload dist/*
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
+
+  publish-node:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: sdk/node
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Install and build
+        run: npm install && npm run build
+
+      - name: Publish to npm
+        run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
