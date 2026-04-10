@@ -1,0 +1,31 @@
+# Python
+.env
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+dist/
+*.egg-info/
+.venv/
+venv/
+htmlcov/
+.coverage
+
+# Node
+node_modules/
+sdk/node/dist/
+sdk/node/package-lock.json
+
+# Wrangler / Cloudflare (not used here but safe to exclude)
+.wrangler/
+.dev.vars
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
