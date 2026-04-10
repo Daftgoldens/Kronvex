@@ -22,7 +22,7 @@ or `%APPDATA%\Claude\claude_desktop_config.json` (Windows):
   "mcpServers": {
     "kronvex": {
       "command": "npx",
-      "args": ["kronvex-mcp"],
+      "args": ["-y", "@kronvex/mcp"],
       "env": {
         "KRONVEX_API_KEY": "kv-your-api-key",
         "KRONVEX_AGENT_ID": "your-agent-id"

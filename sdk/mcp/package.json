@@ -20,5 +20,13 @@
     "tsx": "^4.0.0"
   },
   "engines": { "node": ">=18" },
-  "keywords": ["kronvex", "mcp", "memory", "ai-agents"]
+  "keywords": ["mcp", "model-context-protocol", "kronvex", "memory", "ai-agents", "llm", "vector-search", "semantic-memory", "claude", "cursor"],
+  "homepage": "https://kronvex.io",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Daftgoldens/Kronvex.git",
+    "directory": "sdk/mcp"
+  },
+  "license": "MIT",
+  "author": "Kronvex <hello@kronvex.io>"
 }
