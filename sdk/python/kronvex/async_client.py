@@ -78,7 +78,7 @@ class AsyncKronvex:
 
     Usage::
 
-        async with AsyncKronvex("kx_your_key") as kx:
+        async with AsyncKronvex("kv-your-api-key") as kx:
             agent = kx.agent("agent-id")
             await agent.remember("User is from Paris")
             memories = await agent.recall("where is the user from?")

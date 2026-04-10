@@ -24,7 +24,7 @@ class Kronvex:
 
         from kronvex import Kronvex
 
-        kx = Kronvex("kx_your_api_key")
+        kx = Kronvex("kv-your-api-key")
         agent = kx.agent("your-agent-id")
 
         # Store a memory

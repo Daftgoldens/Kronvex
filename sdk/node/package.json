@@ -1,6 +1,6 @@
 {
   "name": "kronvex",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Persistent memory for AI agents \u2014 Kronvex Node.js SDK",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
@@ -30,7 +30,7 @@
   "homepage": "https://kronvex.io",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Daftgoldens/kronvex"
+    "url": "https://github.com/Daftgoldens/Kronvex"
   },
   "devDependencies": {
     "tsup": "^8.0.0",

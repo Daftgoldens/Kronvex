@@ -19,7 +19,7 @@ pip install "kronvex[all-integrations]"    # all integrations at once
 ```python
 from kronvex import Kronvex
 
-kx = Kronvex("kx_your_api_key")
+kx = Kronvex("kv-your-api-key")
 agent = kx.agent("your-agent-id")
 
 # Store a memory
@@ -42,7 +42,7 @@ import asyncio
 from kronvex import AsyncKronvex
 
 async def main():
-    async with AsyncKronvex("kx_your_api_key") as kx:
+    async with AsyncKronvex("kv-your-api-key") as kx:
         agent = kx.agent("your-agent-id")
         await agent.remember("User is based in Paris", memory_type="semantic")
         memories = await agent.recall("where is the user?")

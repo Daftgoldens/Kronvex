@@ -17,7 +17,7 @@ yarn add kronvex
 ```typescript
 import { Kronvex } from "kronvex";
 
-const kx = new Kronvex("kx_your_api_key");
+const kx = new Kronvex("kv-your-api-key");
 const agent = kx.agent("your-agent-id");
 
 // Store a memory
