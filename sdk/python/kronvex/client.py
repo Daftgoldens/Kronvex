@@ -53,7 +53,7 @@ class Kronvex:
             headers={
                 "X-API-Key": api_key,
                 "Content-Type": "application/json",
-                "User-Agent": f"kronvex-python/0.5.1",
+                "User-Agent": f"kronvex-python/0.5.2",
             },
             timeout=timeout,
         )
