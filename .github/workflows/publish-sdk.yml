@@ -8,6 +8,8 @@ on:
 jobs:
   publish-python:
     runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     defaults:
       run:
         working-directory: sdk/python
@@ -32,6 +34,8 @@ jobs:
 
   publish-node:
     runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     defaults:
       run:
         working-directory: sdk/node
@@ -54,6 +58,8 @@ jobs:
 
   publish-mcp:
     runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     defaults:
       run:
         working-directory: sdk/mcp
