@@ -1,0 +1,24 @@
+{
+  "name": "@kronvex/mcp",
+  "version": "1.1.0",
+  "description": "Kronvex MCP server — persistent memory tools for AI agents",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "kronvex-mcp": "dist/index.js"
+  },
+  "scripts": {
+    "build": "tsup src/index.ts --format esm --target node18 --outDir dist --no-splitting",
+    "dev": "tsx src/index.ts"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0"
+  },
+  "devDependencies": {
+    "tsup": "^8.0.0",
+    "typescript": "^5.0.0",
+    "tsx": "^4.0.0"
+  },
+  "engines": { "node": ">=18" },
+  "keywords": ["kronvex", "mcp", "memory", "ai-agents"]
+}
