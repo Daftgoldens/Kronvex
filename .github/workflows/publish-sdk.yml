@@ -27,7 +27,7 @@ jobs:
       - name: Build and publish to PyPI
         run: |
           python -m build
-          twine upload dist/*
+          twine upload dist/* --skip-existing
         env:
           TWINE_USERNAME: __token__
           TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
@@ -52,7 +52,13 @@ jobs:
         run: npm install && npm run build
 
       - name: Publish to npm
-        run: npm publish
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          if npm view "kronvex@$VERSION" version 2>/dev/null | grep -q "$VERSION"; then
+            echo "kronvex@$VERSION already published, skipping"
+          else
+            npm publish
+          fi
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
@@ -76,6 +82,12 @@ jobs:
         run: npm install && npm run build
 
       - name: Publish to npm
-        run: npm publish --access public
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          if npm view "@kronvex/mcp@$VERSION" version 2>/dev/null | grep -q "$VERSION"; then
+            echo "@kronvex/mcp@$VERSION already published, skipping"
+          else
+            npm publish --access public
+          fi
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
