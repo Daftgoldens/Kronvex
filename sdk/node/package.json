@@ -1,6 +1,6 @@
 {
   "name": "kronvex",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Persistent memory for AI agents \u2014 Kronvex Node.js SDK",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
