@@ -354,6 +354,11 @@ async def _generate_one(name: str, company: str, role: str = "", signal: str = "
     bodies = _EMAIL_BODIES.get(seq, _EMAIL_BODIES[1])
     body = bodies.get(lang, bodies["en"]).format(hook=hook).strip()
 
+    # Prepend greeting with first name
+    first_name = name.split()[0] if name else ""
+    if first_name and not body.lower().startswith(("bonjour", "salut", "hi ", "hey ", "hello")):
+        body = f"Bonjour {first_name},\n\n{body}"
+
     return {"subject": subject, "body": body}
 
 
@@ -418,6 +423,22 @@ async def save_draft(body: SaveDraftIn, db: AsyncSession = Depends(get_db)):
     await db.commit()
     await db.refresh(em)
     return {"email_id": em.id}
+
+
+class UpdateDraftIn(BaseModel):
+    subject: str
+    body: str
+
+
+@router.patch("/cmo/drafts/{email_id}", dependencies=[Depends(require_admin)])
+async def update_draft(email_id: int, body: UpdateDraftIn, db: AsyncSession = Depends(get_db)):
+    em = (await db.execute(select(CmoEmail).where(CmoEmail.id == email_id, CmoEmail.status == "draft"))).scalar_one_or_none()
+    if not em:
+        raise HTTPException(404, "Draft not found")
+    em.subject = body.subject
+    em.body = body.body
+    await db.commit()
+    return {"ok": True}
 
 
 @router.get("/cmo/drafts", dependencies=[Depends(require_admin)])
