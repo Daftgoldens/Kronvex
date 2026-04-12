@@ -280,22 +280,49 @@ async def lead_emails(lead_id: int, db: AsyncSession = Depends(get_db)):
 
 # ── CMO: Email generation ──────────────────────────────────────────────────
 
-_SYSTEM_PROMPT = """\
-You are Baptiste, founder of Kronvex (kronvex.io) — a persistent memory API \
-for B2B AI agents. You write cold emails to founders and CTOs building AI agents.
+# AI generates only the personalized hook + subject + language detection.
+# Fixed templates ensure consistent brand voice across all sequences.
+_HOOK_PROMPT = """\
+You are Baptiste, founder of Kronvex. Generate the personalized opening hook for a cold outreach.
 
-Rules:
-- 3-5 sentences max, plain text only
-- Human: peer tone, not vendor pitch
-- French or English: match the lead's country/region
-- Specific: reference their product or signal
-- One soft CTA ("Worth exploring?" / "Pertinent pour toi ?")
-- Never mention pricing in first email
-- Never use: synergy, leverage, "I hope this finds you well"
+Output ONLY:
+- hook: 1-2 sentences, plain text, specific to their product/role/signal. No greeting.
+- subject: 2-4 word lowercase email subject line
+- lang: "fr" if lead is French-speaking (French name, French company, France signals), else "en"
 
-Kronvex: agents remember across sessions via /remember /recall /inject-context. EU-hosted, GDPR-native.
+Do NOT write the full email. Do NOT pitch Kronvex. Just hook, subject, lang.
+Respond with JSON only: {"hook": "...", "subject": "...", "lang": "fr"}"""
 
-Respond with JSON only: {"subject": "2-4 word lowercase subject", "body": "plain text"}"""
+_LI_HOOK_PROMPT = """\
+You are Baptiste, founder of Kronvex. Generate the personalized opening for a LinkedIn DM.
+
+Output ONLY:
+- hook: 1 sentence, plain text, specific to their product/role/signal
+- lang: "fr" if French-speaking, else "en"
+
+Do NOT write the full message. Do NOT pitch Kronvex. Just hook and lang.
+Respond with JSON only: {"hook": "...", "lang": "fr"}"""
+
+# Fixed email body templates — {hook} and {lang}-appropriate CTA get injected
+_EMAIL_BODIES = {
+    1: {
+        "fr": "{hook}\n\nOn construit chez Kronvex une API de mémoire persistante pour les agents IA — les agents retiennent le contexte entre sessions via /remember, /recall et /inject-context. EU-hosted, GDPR-native.\n\nPertinent pour toi ?\n\nBaptiste\nkronvex.io",
+        "en": "{hook}\n\nAt Kronvex we've built a persistent memory API for AI agents — agents retain context across sessions via /remember, /recall and /inject-context. EU-hosted, GDPR-native.\n\nWorth exploring?\n\nBaptiste\nkronvex.io",
+    },
+    2: {
+        "fr": "Je me permets de revenir. {hook}\n\nKronvex s'intègre directement dans LangChain, n8n ou CrewAI en quelques lignes.\n\nÇa t'intéresse ?\n\nBaptiste",
+        "en": "Following up briefly. {hook}\n\nKronvex plugs into LangChain, n8n or CrewAI in a few lines.\n\nStill relevant?\n\nBaptiste",
+    },
+    3: {
+        "fr": "Dernier message de ma part — si le timing n'est pas bon, pas de problème. La porte reste ouverte.\n\nBaptiste\nkronvex.io",
+        "en": "Last message from me — if the timing isn't right, no worries. Door's always open.\n\nBaptiste\nkronvex.io",
+    },
+}
+
+_LI_BODIES = {
+    "fr": "{hook}\n\nJe travaille sur Kronvex — mémoire persistante pour agents IA (/remember, /recall, /inject-context). EU-hosted, GDPR-native.\n\nÇa t'intéresse ?",
+    "en": "{hook}\n\nI'm building Kronvex — persistent memory for AI agents (/remember, /recall, /inject-context). EU-hosted, GDPR-native.\n\nWorth a chat?",
+}
 
 
 async def _generate_one(name: str, company: str, role: str = "", signal: str = "", seq: int = 1) -> dict:
@@ -306,24 +333,62 @@ async def _generate_one(name: str, company: str, role: str = "", signal: str = "
     ctx = [f"Lead: {name}, {role or 'founder/CTO'} at {company}."]
     if signal:
         ctx.append(f"Signal: {signal}.")
-    if seq == 1:
-        ctx.append("First touch. Observation → problem → value → soft CTA.")
-    elif seq == 2:
-        ctx.append("Follow-up #2 (3 days later). Different angle, mention LangChain/n8n/CrewAI integration. Reference previous outreach briefly.")
-    else:
-        ctx.append("Breakup email. Short, graceful, leave door open.")
+    if seq == 3:
+        ctx.append("Breakup sequence — just detect lang, leave hook empty.")
 
     client = AsyncOpenAI(api_key=api_key)
     r = await client.chat.completions.create(
         model="gpt-4o-mini",
-        max_tokens=512,
+        max_tokens=200,
         messages=[
-            {"role": "system", "content": _SYSTEM_PROMPT},
+            {"role": "system", "content": _HOOK_PROMPT},
             {"role": "user", "content": " ".join(ctx)},
         ],
         response_format={"type": "json_object"},
     )
-    return json.loads(r.choices[0].message.content)
+    data = json.loads(r.choices[0].message.content)
+    hook = data.get("hook", "")
+    subject = data.get("subject", f"kronvex — {company.lower()}")
+    lang = data.get("lang", "en") if data.get("lang") in ("fr", "en") else "en"
+
+    bodies = _EMAIL_BODIES.get(seq, _EMAIL_BODIES[1])
+    body = bodies.get(lang, bodies["en"]).format(hook=hook).strip()
+
+    return {"subject": subject, "body": body}
+
+
+class LinkedInMsgIn(BaseModel):
+    name: str
+    company: str
+    role: str = ""
+    signal: str = ""
+
+
+@router.post("/cmo/linkedin-msg", dependencies=[Depends(require_admin)])
+async def generate_linkedin_msg(body: LinkedInMsgIn):
+    api_key = os.getenv("OPENAI_API_KEY")
+    if not api_key:
+        raise HTTPException(500, "OPENAI_API_KEY not set")
+
+    ctx = [f"Lead: {body.name}, {body.role or 'founder/CTO'} at {body.company}."]
+    if body.signal:
+        ctx.append(f"Signal: {body.signal}.")
+
+    client = AsyncOpenAI(api_key=api_key)
+    r = await client.chat.completions.create(
+        model="gpt-4o-mini",
+        max_tokens=128,
+        messages=[
+            {"role": "system", "content": _LI_HOOK_PROMPT},
+            {"role": "user", "content": " ".join(ctx)},
+        ],
+        response_format={"type": "json_object"},
+    )
+    data = json.loads(r.choices[0].message.content)
+    hook = data.get("hook", "")
+    lang = data.get("lang", "en") if data.get("lang") in ("fr", "en") else "en"
+    message = _LI_BODIES.get(lang, _LI_BODIES["en"]).format(hook=hook).strip()
+    return {"body": message, "lang": lang}
 
 
 class GenerateSingleIn(BaseModel):
