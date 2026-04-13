@@ -89,27 +89,39 @@ async def list_tools() -> list[types.Tool]:
         types.Tool(
             name="remember",
             description=(
-                "Store a memory persistently. Use this to save project decisions, "
-                "user preferences, architectural choices, recurring context, or any "
-                "information that should persist across sessions.\n"
-                "Examples: 'User prefers TypeScript strict mode', "
-                "'Database: PostgreSQL 16 with pgvector on Railway', "
-                "'Never use any() in this codebase'"
+                "Persist a piece of information to long-term memory so it can be recalled "
+                "in future sessions. Use this whenever the user states a preference, makes "
+                "a decision, or shares context that should survive beyond the current conversation.\n\n"
+                "When to call: after learning the user's tech stack, coding conventions, "
+                "project constraints, architectural decisions, or personal preferences.\n\n"
+                "Returns a confirmation message with the stored content preview.\n\n"
+                "Examples of good memories:\n"
+                "- 'User prefers TypeScript strict mode with no implicit any'\n"
+                "- 'Database: PostgreSQL 16 with pgvector on Railway, connection via asyncpg'\n"
+                "- 'Never use any() type in this codebase — team policy'\n"
+                "- 'Deployed on 2024-03-15: migrated auth from JWT to Supabase sessions'"
             ),
             inputSchema={
                 "type": "object",
                 "properties": {
                     "content": {
                         "type": "string",
-                        "description": "The information to remember. Be specific and complete."
+                        "description": (
+                            "The information to store. Write in a self-contained, specific way "
+                            "so it remains useful without conversation context. "
+                            "Good: 'API rate limit is 100 req/min per key'. "
+                            "Bad: 'the limit we discussed'."
+                        )
                     },
                     "memory_type": {
                         "type": "string",
                         "enum": ["episodic", "semantic", "procedural"],
                         "description": (
-                            "episodic = specific events/decisions, "
-                            "semantic = general facts/preferences, "
-                            "procedural = how-to knowledge/patterns"
+                            "Category of the memory:\n"
+                            "- episodic: a specific past event or decision (e.g. 'Deployed v2 on 2024-03-10')\n"
+                            "- semantic: a general fact, preference, or project truth (e.g. 'User prefers tabs over spaces')\n"
+                            "- procedural: a how-to, pattern, or repeatable process (e.g. 'To deploy: run npm run build then railway up')\n"
+                            "Defaults to 'semantic' when unsure."
                         ),
                         "default": "semantic"
                     }
@@ -120,20 +132,33 @@ async def list_tools() -> list[types.Tool]:
         types.Tool(
             name="recall",
             description=(
-                "Search memories semantically. Returns the most relevant stored memories "
-                "ranked by confidence (similarity × recency × frequency). "
-                "Use this before starting a task to retrieve relevant project context."
+                "Search long-term memory using semantic similarity and return the most relevant "
+                "stored memories ranked by a confidence score (weighted combination of "
+                "similarity, recency, and access frequency).\n\n"
+                "When to call: before starting a task, when the user references something "
+                "from a past session, or when you need project-specific context.\n\n"
+                "Returns a ranked list of memories with their confidence score and type. "
+                "Returns an empty result if no memories exceed the similarity threshold."
             ),
             inputSchema={
                 "type": "object",
                 "properties": {
                     "query": {
                         "type": "string",
-                        "description": "What to search for. Use natural language."
+                        "description": (
+                            "Natural language description of what you are looking for. "
+                            "The search is semantic, not keyword-based — describe the concept, "
+                            "not the exact wording. "
+                            "Example: 'database connection settings' or 'user preferences for code style'."
+                        )
                     },
                     "top_k": {
                         "type": "integer",
-                        "description": "Number of results to return (1-10)",
+                        "description": (
+                            "Maximum number of memories to return, ranked by confidence. "
+                            "Use 3–5 for focused lookups, up to 10 for broad exploration. "
+                            "Defaults to 5."
+                        ),
                         "default": TOP_K_DEFAULT,
                         "minimum": 1,
                         "maximum": 10
@@ -145,16 +170,27 @@ async def list_tools() -> list[types.Tool]:
         types.Tool(
             name="inject_context",
             description=(
-                "Get a formatted context block with the most relevant memories for the "
-                "current task. Returns a ready-to-use context string. "
-                "Use this at the start of complex tasks to automatically load relevant context."
+                "Retrieve the most relevant memories for the current task and return them "
+                "as a single formatted context block, ready to prepend to a prompt or "
+                "include in a system message.\n\n"
+                "When to call: at the start of a complex or multi-step task where relevant "
+                "project history, constraints, or preferences may exist in memory. "
+                "Prefer this over recall when you want a single ready-to-use block rather "
+                "than a list of individual memories.\n\n"
+                "Returns a formatted text block summarising the relevant memories, and "
+                "a count of how many memories were used. Returns empty if none are relevant."
             ),
             inputSchema={
                 "type": "object",
                 "properties": {
                     "query": {
                         "type": "string",
-                        "description": "The current task or topic to retrieve context for."
+                        "description": (
+                            "Describe the current task or topic in plain language. "
+                            "The server retrieves memories semantically related to this description. "
+                            "Example: 'refactoring the authentication module' or "
+                            "'setting up the CI pipeline for the mobile app'."
+                        )
                     }
                 },
                 "required": ["query"]
@@ -163,15 +199,27 @@ async def list_tools() -> list[types.Tool]:
         types.Tool(
             name="forget",
             description=(
-                "Search for and delete memories matching a query. "
-                "Use when outdated information should be removed."
+                "Search for memories matching a query and permanently delete the top matches. "
+                "Use this to remove outdated, incorrect, or superseded information from memory.\n\n"
+                "When to call: when the user explicitly asks to forget something, or when "
+                "you detect that a stored memory is no longer accurate (e.g. a dependency "
+                "was upgraded, a decision was reversed, a team member left).\n\n"
+                "Internally performs a high-threshold semantic search (0.7) to find close "
+                "matches, then deletes up to 3 results. Returns a list of deleted memories "
+                "or a message if nothing matched."
             ),
             inputSchema={
                 "type": "object",
                 "properties": {
                     "query": {
                         "type": "string",
-                        "description": "What to forget. Searches semantically, then deletes matches."
+                        "description": (
+                            "Describe what should be forgotten in plain language. "
+                            "The search is semantic — describe the topic or fact, not exact wording. "
+                            "Example: 'old database URL', 'previous deployment process', "
+                            "'user preference for Python 3.9'. "
+                            "Only memories with high similarity (≥0.7) are deleted."
+                        )
                     }
                 },
                 "required": ["query"]
