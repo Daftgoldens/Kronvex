@@ -292,7 +292,7 @@ async def restore_memory(agent_id: uuid.UUID, memory_id: uuid.UUID,
     memory.deleted_at = None
     api_key.cycle_memories_used = (api_key.cycle_memories_used or 0) + 1
     await db.commit()
-    return MemoryRestoreResponse(id=str(memory_id), restored=True)
+    return MemoryRestoreResponse(id=str(memory_id), restored=True, content=memory.content)
 
 
 @router.patch("/agents/{agent_id}/memories/{memory_id}", response_model=MemoryResponse)

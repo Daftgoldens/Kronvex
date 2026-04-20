@@ -146,10 +146,13 @@ async def remember(db: AsyncSession, agent_id: uuid.UUID, data: RememberRequest,
     if memory_type == "episodic" and not data.pinned:
         memory_type = await _classify_memory_type(data.content)
 
-    # Compute expires_at from ttl_days (pinned memories never expire)
+    # Compute expires_at from ttl_days or ttl_seconds (pinned memories never expire)
     expires_at = None
-    if data.ttl_days and not data.pinned:
-        expires_at = now + timedelta(days=data.ttl_days)
+    if not data.pinned:
+        if data.ttl_seconds:
+            expires_at = now + timedelta(seconds=data.ttl_seconds)
+        elif data.ttl_days:
+            expires_at = now + timedelta(days=data.ttl_days)
     memory = Memory(
         agent_id=agent_id,
         content=data.content,
@@ -435,7 +438,7 @@ async def _rerank_with_context(results: list, context_messages: list[dict]) -> l
 def _compute_health(memories: list, now: datetime) -> dict:
     """Compute health scores for an agent's memory set."""
     if not memories:
-        return {"coverage_score": 0.0, "freshness_score": 0.0, "coherence_score": 1.0,
+        return {"score": 0.0, "coverage_score": 0.0, "freshness_score": 0.0, "coherence_score": 1.0,
                 "utilization_score": 0.0, "recommendations": ["No memories stored yet. Use /remember to add context."]}
     total = len(memories)
     cutoff_30d = now - timedelta(days=30)
@@ -462,7 +465,8 @@ def _compute_health(memories: list, now: datetime) -> dict:
     if superseded_total: recs.append(f"{superseded_total} memories have been superseded by newer ones.")
     if utilization_score < 0.3: recs.append("Low utilization: check your recall threshold.")
     if coverage_score < 0.4: recs.append("Low coverage: add diverse memory types for richer context.")
-    return {"coverage_score": coverage_score, "freshness_score": freshness_score,
+    score = round((coverage_score + freshness_score + coherence_score + utilization_score) / 4, 4)
+    return {"score": score, "coverage_score": coverage_score, "freshness_score": freshness_score,
             "coherence_score": coherence_score, "utilization_score": utilization_score,
             "recommendations": recs if recs else ["Memory health looks good."]}
 

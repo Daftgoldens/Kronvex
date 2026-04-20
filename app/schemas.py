@@ -27,6 +27,7 @@ class RememberRequest(BaseModel):
     memory_type: MemoryType = "episodic"
     metadata: dict = {}
     ttl_days: int | None = Field(default=None, ge=1, le=3650)  # None = no expiry
+    ttl_seconds: int | None = Field(default=None, ge=60)       # Alternative to ttl_days
     pinned: bool = False  # Pinned memories never expire
 
 class MemoryResponse(BaseModel):
@@ -185,6 +186,7 @@ class BulkImportResponse(BaseModel):
 class MemoryRestoreResponse(BaseModel):
     id: str
     restored: bool
+    content: str | None = None
 
 
 # ── KEY ROTATION ───────────────────────────────────────────────────────────────
@@ -197,6 +199,7 @@ class RotateKeyResponse(BaseModel):
 
 class HealthResponse(BaseModel):
     """A5 — Memory health score for an agent."""
+    score: float                  # Composite 0-1 (avg of the four sub-scores)
     coverage_score: float
     freshness_score: float
     coherence_score: float
