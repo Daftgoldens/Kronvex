@@ -108,7 +108,7 @@ async def create_demo(data: ApiKeyDemoCreate, background_tasks: BackgroundTasks,
 
     # Create API key
     api_key, full_key = await create_demo_key(db, data.name, data.email, data.usecase)
-    logger.info("demo_key.created", extra={"email": data.email, "name": data.name})
+    logger.info("demo_key.created", extra={"email": data.email, "contact_name": data.name})
 
     await db.commit()
 
